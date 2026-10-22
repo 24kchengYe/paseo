@@ -7488,6 +7488,7 @@ export class CodexAppServerAgentClient implements AgentClient {
       detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],
       baseEnv: options?.environment ?? buildCodexAppServerEnv(this.runtimeSettings, launchEnv),
+      envMode: "internal",
     });
     assertChildWithPipes(child);
     return child;
