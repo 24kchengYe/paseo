@@ -12,6 +12,7 @@ import type {
   PluginCommandCenterItemContribution as SDKPluginCommandCenterItemContribution,
   PluginClientSlashCommandContribution as SDKPluginClientSlashCommandContribution,
   PluginComposerItemContribution,
+  PluginNewWorkspaceItemContribution,
   PluginComposerPillContribution as SDKPluginComposerPillContribution,
   PluginSidebarContribution as SDKPluginSidebarContribution,
   PluginSidebarItemContribution as SDKPluginSidebarItemContribution,
@@ -55,6 +56,7 @@ export interface EvaluatedPlugin {
   legacySidebarItems: PluginSidebarContribution[];
   filePanels: PluginFilePanelContribution[];
   composerItems: PluginComposerItemContribution[];
+  newWorkspaceItems: PluginNewWorkspaceItemContribution[];
   workspacePanels: EvaluatedPluginWorkspacePanelContribution[];
   commandCenterItems: PluginCommandCenterItemContribution[];
   clientSlashCommands: PluginClientSlashCommandContribution[];
@@ -85,6 +87,7 @@ export type {
   PluginCommandCenterItemContribution,
   PluginClientSlashCommandContribution,
   PluginComposerItemContribution,
+  PluginNewWorkspaceItemContribution,
   PluginComposerPillContribution,
   PluginSidebarContribution,
   PluginSidebarItemContribution,

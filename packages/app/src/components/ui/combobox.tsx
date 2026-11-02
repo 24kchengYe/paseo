@@ -89,6 +89,8 @@ export interface ComboboxProps {
   }) => ReactElement;
   onSearchQueryChange?: (query: string) => void;
   searchable?: boolean;
+  /** The caller answers the search query itself, so the options are shown as given. */
+  remoteSearch?: boolean;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
@@ -1292,6 +1294,10 @@ function DesktopComboboxBody(props: DesktopBodyProps): ReactElement | null {
   );
 }
 
+function filtersLocally(input: { searchable: boolean; remoteSearch?: boolean }): boolean {
+  return input.searchable && !input.remoteSearch;
+}
+
 export function Combobox({
   options,
   value,
@@ -1299,6 +1305,7 @@ export function Combobox({
   renderOption,
   onSearchQueryChange,
   searchable = true,
+  remoteSearch,
   placeholder,
   searchPlaceholder,
   emptyText,
@@ -1458,7 +1465,7 @@ export function Combobox({
       buildVisibleComboboxOptions({
         options,
         searchQuery,
-        searchable,
+        searchable: filtersLocally({ searchable, remoteSearch }),
         allowCustomValue,
         customValuePrefix,
         customValueDescription,
@@ -1470,6 +1477,7 @@ export function Combobox({
       customValueKind,
       customValuePrefix,
       options,
+      remoteSearch,
       searchQuery,
       searchable,
     ],

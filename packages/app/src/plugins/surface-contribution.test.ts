@@ -37,6 +37,7 @@ function installation(
     })),
     filePanels: [],
     composerItems: [],
+    newWorkspaceItems: [],
     workspacePanels: [],
     commandCenterItems: [],
     clientSlashCommands: [],

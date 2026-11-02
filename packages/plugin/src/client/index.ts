@@ -78,6 +78,12 @@ export type {
   PluginComposerItemContribution,
   PluginComposerItemProps,
 } from "./composer.js";
+export { useNewWorkspace } from "./new-workspace.js";
+export type {
+  PluginNewWorkspace,
+  PluginNewWorkspaceItemContribution,
+  PluginNewWorkspaceItemProps,
+} from "./new-workspace.js";
 export { useRpc } from "./rpc-context.js";
 import type { SettingsDefinition } from "../settings.js";
 import type { SettingsState } from "./contracts.js";
