@@ -59,6 +59,7 @@ export interface CreateAgentFromSessionInput {
   images?: Array<{ data: string; mimeType: string }>;
   attachments?: AgentAttachment[];
   labels: Record<string, string>;
+  metadata?: CreateAgentOptions["metadata"];
   env?: Record<string, string>;
   provisionalTitle: string | null;
   firstAgentContext: FirstAgentContext;
@@ -251,6 +252,7 @@ async function resolveSessionCreateAgent(
     config: sessionConfig,
     createOptions: {
       labels: input.labels,
+      metadata: input.metadata,
       initialPrompt: trimmedPrompt,
       env: input.env,
       initialTitle: input.provisionalTitle,

@@ -137,6 +137,7 @@ export function extractTimestamps(record: StoredAgentRecord): {
   updatedAt: Date;
   lastUserMessageAt: Date | null;
   labels?: Record<string, string>;
+  metadata?: StoredAgentRecord["metadata"];
   workspaceId?: string;
   owner?: StoredAgentRecord["owner"];
 } {
@@ -145,6 +146,7 @@ export function extractTimestamps(record: StoredAgentRecord): {
     updatedAt: new Date(resolveStoredAgentUpdatedAt(record)),
     lastUserMessageAt: record.lastUserMessageAt ? new Date(record.lastUserMessageAt) : null,
     labels: record.labels,
+    metadata: record.metadata,
     workspaceId: record.workspaceId,
     owner: record.owner,
   };

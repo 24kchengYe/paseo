@@ -303,6 +303,9 @@ import type {
 // unknown avoids zod-aot's recursive z.json() object-codegen regression.
 const JsonWireValueSchema = z.unknown() as z.ZodType<JsonValue>;
 
+/** Plugin-owned data on an agent or workspace. Paseo stores it and never reads a key. */
+const EntityMetadataSchema = z.record(z.string(), JsonWireValueSchema);
+
 export const AgentStatusSchema = z.enum(AGENT_LIFECYCLE_STATUSES);
 
 const AgentModeSchema: z.ZodType<AgentMode> = z.object({
@@ -922,6 +925,7 @@ export const AgentSnapshotPayloadSchema = z.object({
   lastError: z.string().optional(),
   title: z.string().nullable(),
   labels: z.record(z.string(), z.string()).default({}),
+  metadata: EntityMetadataSchema.optional(),
   requiresAttention: z.boolean().optional(),
   attentionReason: z.enum(["finished", "error", "permission"]).nullable().optional(),
   attentionTimestamp: z.string().nullable().optional(),
@@ -1065,6 +1069,22 @@ export const WorkspaceTitleSetRequestSchema = z.object({
   workspaceId: z.string(),
   // Null or empty string clears the title and reverts to the derived name.
   title: z.string().nullable(),
+  requestId: z.string(),
+});
+
+export const AgentMetadataUpdateRequestSchema = z.object({
+  type: z.literal("agent.metadata.update.request"),
+  agentId: z.string(),
+  // Top-level keys replace; null removes the key.
+  patch: EntityMetadataSchema,
+  requestId: z.string(),
+});
+
+export const WorkspaceMetadataUpdateRequestSchema = z.object({
+  type: z.literal("workspace.metadata.update.request"),
+  workspaceId: z.string(),
+  // Top-level keys replace; null removes the key.
+  patch: EntityMetadataSchema,
   requestId: z.string(),
 });
 
@@ -1826,6 +1846,7 @@ export const CreateAgentRequestMessageSchema = z.object({
   // Workspace creation intent, rejected when selecting an existing workspace.
   background: z.boolean().optional(),
   labels: z.record(z.string(), z.string()).default({}),
+  metadata: EntityMetadataSchema.optional(),
   requestId: z.string(),
 });
 
@@ -2202,6 +2223,28 @@ export const WorkspaceTitleSetResponsePayloadSchema = z.object({
 export const WorkspaceTitleSetResponseSchema = z.object({
   type: z.literal("workspace.title.set.response"),
   payload: WorkspaceTitleSetResponsePayloadSchema,
+});
+
+export const AgentMetadataUpdateResponseSchema = z.object({
+  type: z.literal("agent.metadata.update.response"),
+  payload: z.object({
+    requestId: z.string(),
+    agentId: z.string(),
+    accepted: z.boolean(),
+    metadata: EntityMetadataSchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const WorkspaceMetadataUpdateResponseSchema = z.object({
+  type: z.literal("workspace.metadata.update.response"),
+  payload: z.object({
+    requestId: z.string(),
+    workspaceId: z.string(),
+    accepted: z.boolean(),
+    metadata: EntityMetadataSchema.nullable(),
+    error: z.string().nullable(),
+  }),
 });
 
 export const WorkspacePinSetResponsePayloadSchema = z.object({
@@ -2759,6 +2802,7 @@ export const WorkspaceCreateRequestSchema = z.object({
   idempotencyKey: z.string().min(1).max(512).optional(),
   // Optional user-set title applied to the created workspace.
   title: z.string().optional(),
+  metadata: EntityMetadataSchema.optional(),
   // Optional prompt context for workspace-level name/branch generation.
   firstAgentContext: FirstAgentContextSchema.optional(),
   // Retained for wire parsing; public internal creation is no longer supported.
@@ -3355,6 +3399,8 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProjectIconSetRequestSchema,
   ProjectRemoveRequestSchema,
   WorkspaceTitleSetRequestSchema,
+  AgentMetadataUpdateRequestSchema,
+  WorkspaceMetadataUpdateRequestSchema,
   WorkspacePinSetRequestSchema,
   WorkspaceLabelListRequestSchema,
   WorkspaceLabelAssignmentSetRequestSchema,
@@ -3888,6 +3934,7 @@ export const ServerInfoStatusPayloadSchema = z
         explicitEventSubscriptions: z.boolean().optional(),
         ownedSubscriptions: z.boolean().optional(),
         providerOptionControls: z.boolean().optional(),
+        entityMetadata: z.boolean().optional(),
         binaryChunkingV1: z.boolean().optional(),
         workspaceSetupObservation: z.boolean().optional(),
         workspaceSortTimes: z.boolean().optional(),
@@ -4222,6 +4269,7 @@ export const WorkspaceDescriptorPayloadSchema = z
     pinnedAt: z.string().nullable().optional(),
     // COMPAT(workspaceLabels): added in v0.5.0, remove optional after 2027-08-14.
     labels: z.array(z.string()).optional(),
+    metadata: EntityMetadataSchema.optional(),
     // Retained for wire parsing of older daemon descriptors.
     internal: z.boolean().optional(),
     background: z.boolean().optional(),
@@ -7200,6 +7248,8 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProjectIconSetResponseSchema,
   ProjectRemoveResponseSchema,
   WorkspaceTitleSetResponseSchema,
+  AgentMetadataUpdateResponseSchema,
+  WorkspaceMetadataUpdateResponseSchema,
   WorkspacePinSetResponseSchema,
   WorkspaceRecoveryInspectResponseSchema,
   WorkspaceRecoveryRestoreResponseSchema,
@@ -7566,6 +7616,10 @@ export type ProjectIconSetRequest = z.infer<typeof ProjectIconSetRequestSchema>;
 export type ProjectRemoveRequest = z.infer<typeof ProjectRemoveRequestSchema>;
 export type WorkspaceTitleSetRequest = z.infer<typeof WorkspaceTitleSetRequestSchema>;
 export type WorkspacePinSetRequest = z.infer<typeof WorkspacePinSetRequestSchema>;
+export type AgentMetadataUpdateRequest = z.infer<typeof AgentMetadataUpdateRequestSchema>;
+export type WorkspaceMetadataUpdateRequest = z.infer<typeof WorkspaceMetadataUpdateRequestSchema>;
+export type AgentMetadataUpdateResponse = z.infer<typeof AgentMetadataUpdateResponseSchema>;
+export type WorkspaceMetadataUpdateResponse = z.infer<typeof WorkspaceMetadataUpdateResponseSchema>;
 export type WorkspaceRecoveryInspectRequest = z.infer<typeof WorkspaceRecoveryInspectRequestSchema>;
 export type WorkspaceRecoveryRestoreRequest = z.infer<typeof WorkspaceRecoveryRestoreRequestSchema>;
 export type SetAgentModeRequestMessage = z.infer<typeof SetAgentModeRequestMessageSchema>;

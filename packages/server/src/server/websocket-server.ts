@@ -2012,6 +2012,7 @@ export class VoiceAssistantWebSocketServer {
         usageSources: true,
         ownedSubscriptions: true,
         providerOptionControls: true,
+        entityMetadata: true,
         binaryChunkingV1: true,
         agentRequestReceipts: true,
         workspaceRequestReceipts: true,

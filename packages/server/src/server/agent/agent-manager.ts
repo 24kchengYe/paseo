@@ -6,6 +6,7 @@ import { ensureAgentLoaded } from "./agent-loading.js";
 import { projectTimelineRows } from "./timeline-projection.js";
 import type { PluginLifecycle } from "../plugins/lifecycle/index.js";
 import { describeHookAgent, publishAgentStream } from "../plugins/lifecycle/index.js";
+import { applyRecordPatch } from "../record-patch.js";
 import type { PluginSessionOpenRequest } from "@getpaseo/plugin/server";
 import { randomUUID } from "node:crypto";
 import { basename, resolve } from "node:path";
@@ -60,7 +61,7 @@ import {
   type ListImportableSessionsOptions,
 } from "./agent-sdk-types.js";
 import { buildArchivedAgentRecord, type ArchivedStoredAgentRecord } from "./agent-archive.js";
-import type { ProviderOptions } from "@getpaseo/protocol/agent-types";
+import type { JsonValue, ProviderOptions } from "@getpaseo/protocol/agent-types";
 import { toStoredAgentRecord } from "./agent-projections.js";
 import {
   applyProviderOptionsPatch,
@@ -324,6 +325,7 @@ type ProviderClientMap = Partial<Record<AgentProvider, AgentClient>>;
 
 export interface CreateAgentOptions {
   labels?: Record<string, string>;
+  metadata?: AgentMetadata;
   initialPrompt?: string;
   env?: Record<string, string>;
   persistSession?: boolean;
@@ -465,6 +467,8 @@ interface ManagedAgentBase {
    * User-defined labels for categorizing agents (e.g., { surface: "workspace" }).
    */
   labels: Record<string, string>;
+  /** Plugin-owned data. Paseo persists and forwards it and never reads a key. */
+  metadata: AgentMetadata;
 }
 
 type ManagedAgentWithSession = ManagedAgentBase & {
@@ -524,6 +528,7 @@ type ActiveManagedAgent =
 
 type LiveManagedAgent = ActiveManagedAgent;
 type AgentLabelPatch = Record<string, string | null>;
+type AgentMetadata = Record<string, JsonValue>;
 
 function attachManagedTurnIdentity(
   agent: ActiveManagedAgent,
@@ -571,6 +576,7 @@ interface WriteLabelsResult {
 interface AgentMetadataPatch {
   title?: string;
   labels?: AgentLabelPatch;
+  metadata?: Record<string, JsonValue | null>;
 }
 
 const SYSTEM_ERROR_PREFIX = "[System Error]";
@@ -629,27 +635,17 @@ function createAbortError(signal: AbortSignal | undefined, fallbackMessage: stri
   return Object.assign(new Error(message), { name: "AbortError" });
 }
 
+/** The user labels and plugin metadata an agent carries; both default to empty. */
+function agentEntityData(source?: { labels?: Record<string, string>; metadata?: AgentMetadata }) {
+  return { labels: source?.labels ?? {}, metadata: source?.metadata ?? {} };
+}
+
 function validateAgentId(agentId: string, source: string): string {
   const result = AgentIdSchema.safeParse(agentId);
   if (!result.success) {
     throw new Error(`${source}: agentId must be a UUID`);
   }
   return result.data;
-}
-
-function applyLabelPatch(
-  labels: Record<string, string>,
-  patch: AgentLabelPatch,
-): Record<string, string> {
-  const nextLabels = { ...labels };
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === null) {
-      delete nextLabels[key];
-    } else {
-      nextLabels[key] = value;
-    }
-  }
-  return nextLabels;
 }
 
 function buildExplicitTimelineSeedForRegister(
@@ -1386,6 +1382,7 @@ export class AgentManager {
       const request = await this.pluginLifecycle.before("agent.create.before", {
         config: sent,
         env: options.env,
+        metadata: options.metadata ?? {},
       });
       // COMPAT(featureValues): added in v0.15.0, remove after 2027-05-01. A plugin written
       // against the previous SDK edits `config.featureValues`.
@@ -1397,7 +1394,7 @@ export class AgentManager {
         }),
         internal: config.internal,
       };
-      options = { ...options, env: request.env };
+      options = { ...options, env: request.env, metadata: request.metadata ?? options.metadata };
     }
     await this.deleteAgentState(resolvedAgentId);
     const { storedConfig, launchConfig, paseoToolPolicy } = await this.prepareSessionConfig(
@@ -1422,6 +1419,7 @@ export class AgentManager {
         workspaceId: options.workspaceId ?? null,
         title: options.initialTitle ?? storedConfig.title ?? null,
         labels: options.labels ?? {},
+        metadata: options.metadata ?? {},
       },
     );
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
@@ -1432,6 +1430,7 @@ export class AgentManager {
     const agent = await this.registerSession(session, storedConfig, resolvedAgentId, {
       launchedOptions,
       labels: options.labels,
+      metadata: options.metadata,
       initialTitle: options.initialTitle,
       workspaceId: options.workspaceId,
       owner: options.owner,
@@ -1465,6 +1464,7 @@ export class AgentManager {
       updatedAt?: Date;
       lastUserMessageAt?: Date | null;
       labels?: Record<string, string>;
+      metadata?: AgentMetadata;
       workspaceId?: string;
       owner?: AgentOwner;
       attention?: AttentionState;
@@ -1497,6 +1497,7 @@ export class AgentManager {
       updatedAt?: Date;
       lastUserMessageAt?: Date | null;
       labels?: Record<string, string>;
+      metadata?: AgentMetadata;
       workspaceId?: string;
       owner?: AgentOwner;
       attention?: AttentionState;
@@ -1549,7 +1550,7 @@ export class AgentManager {
         purpose,
         workspaceId: options?.workspaceId ?? null,
         title: record?.title ?? mergedConfig.title ?? null,
-        labels: record?.labels ?? options?.labels ?? {},
+        ...agentEntityData(record ?? options),
       },
     );
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
@@ -1720,6 +1721,7 @@ export class AgentManager {
         workspaceId: existing.workspaceId,
         title: await this.resolveInitialPersistedTitle(agentId, existing.config, null),
         labels: existing.labels,
+        metadata: existing.metadata,
       },
     );
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
@@ -1764,6 +1766,7 @@ export class AgentManager {
       return this.registerSession(session, storedConfig, agentId, {
         launchedOptions,
         labels: existing.labels,
+        metadata: existing.metadata,
         workspaceId: existing.workspaceId,
         owner: existing.owner,
         launchEnv: existing.launchEnv,
@@ -2224,6 +2227,7 @@ export class AgentManager {
         attention,
         internal: record.internal,
         labels: record.labels,
+        metadata: record.metadata,
       },
     });
   }
@@ -2425,10 +2429,30 @@ export class AgentManager {
     });
   }
 
+  /** Applies a plugin-metadata patch (null removes a key) and returns the stored result. */
+  async setMetadata(
+    agentId: string,
+    patch: Record<string, JsonValue | null>,
+  ): Promise<AgentMetadata> {
+    return this.runLifecycleMutation(agentId, async () => {
+      const liveAgent = this.agents.get(agentId);
+      if (liveAgent) {
+        liveAgent.metadata = applyRecordPatch<JsonValue>(liveAgent.metadata, patch);
+        this.touchUpdatedAt(liveAgent);
+        await this.persistSnapshot(liveAgent);
+        this.emitState(liveAgent, { persist: false });
+        return liveAgent.metadata;
+      }
+      const record = await this.writeStoredMetadata(agentId, { metadata: patch });
+      if (!record.internal) this.dispatchStoredAgentState(record);
+      return record.metadata;
+    });
+  }
+
   private async writeLabels(agentId: string, patch: AgentLabelPatch): Promise<WriteLabelsResult> {
     const liveAgent = this.agents.get(agentId);
     if (liveAgent) {
-      liveAgent.labels = applyLabelPatch(liveAgent.labels, patch);
+      liveAgent.labels = applyRecordPatch(liveAgent.labels, patch);
       this.touchUpdatedAt(liveAgent);
       await this.persistSnapshot(liveAgent);
       this.emitState(liveAgent, { persist: false });
@@ -2453,7 +2477,8 @@ export class AgentManager {
     const nextRecord = {
       ...record,
       ...(patch.title ? { title: patch.title } : {}),
-      ...(patch.labels ? { labels: applyLabelPatch(record.labels, patch.labels) } : {}),
+      ...(patch.labels ? { labels: applyRecordPatch(record.labels, patch.labels) } : {}),
+      ...(patch.metadata ? { metadata: applyRecordPatch(record.metadata, patch.metadata) } : {}),
       updatedAt: this.nextStoredUpdatedAt(record),
     };
     await registry.upsert(nextRecord);
@@ -2632,7 +2657,7 @@ export class AgentManager {
     await registry.upsert({
       ...record,
       ...(updates?.workspaceId ? { workspaceId: updates.workspaceId } : {}),
-      ...(updates?.labels ? { labels: applyLabelPatch(record.labels, updates.labels) } : {}),
+      ...(updates?.labels ? { labels: applyRecordPatch(record.labels, updates.labels) } : {}),
       archivedAt: null,
       updatedAt: new Date().toISOString(),
     });
@@ -3919,6 +3944,7 @@ export class AgentManager {
       updatedAt?: Date;
       lastUserMessageAt?: Date | null;
       labels?: Record<string, string>;
+      metadata?: AgentMetadata;
       timeline?: AgentTimelineItem[];
       timelineRows?: AgentTimelineRow[];
       timelineNextSeq?: number;
@@ -4128,6 +4154,7 @@ export class AgentManager {
           updatedAt?: Date;
           lastUserMessageAt?: Date | null;
           labels?: Record<string, string>;
+          metadata?: AgentMetadata;
           historyPrimed?: boolean;
           lastUsage?: AgentUsage;
           lastError?: string;
@@ -4186,7 +4213,7 @@ export class AgentManager {
       lastError: options?.lastError,
       attention: resolveInitialAttention(options?.attention),
       internal: config.internal ?? false,
-      labels: options?.labels ?? {},
+      ...agentEntityData(options),
     } as ActiveManagedAgent;
   }
 
@@ -5770,6 +5797,7 @@ export class AgentManager {
       workspaceId?: string | null;
       title?: string | null;
       labels?: Record<string, string>;
+      metadata?: AgentMetadata;
     },
   ): Promise<AgentLaunchContext> {
     // A plugin changing during this open must still make the resulting session stale.
@@ -5787,7 +5815,7 @@ export class AgentManager {
         purpose: opening?.purpose ?? "interactive",
         env: { ...env },
         title: opening?.title ?? null,
-        labels: opening?.labels ?? {},
+        ...agentEntityData(opening),
         tools: [],
         mcpServers: {},
       };

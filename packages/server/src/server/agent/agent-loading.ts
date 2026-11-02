@@ -133,6 +133,7 @@ export async function ensureAgentLoaded(
       }
       snapshot = await deps.agentManager.createAgent(config, agentId, {
         labels: record.labels,
+        metadata: record.metadata,
         workspaceId: record.workspaceId,
         owner: record.owner,
         env: record.launchEnv,
