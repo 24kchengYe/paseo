@@ -36,6 +36,7 @@ function installation(
       icon: "Blocks",
     })),
     filePanels: [],
+    composerItems: [],
     workspacePanels: [],
     commandCenterItems: [],
     clientSlashCommands: [],

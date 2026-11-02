@@ -34,6 +34,7 @@ function installed(
     },
     legacySidebarItems,
     filePanels: [],
+    composerItems: [],
     workspacePanels: [],
     commandCenterItems: [],
     clientSlashCommands: [],
