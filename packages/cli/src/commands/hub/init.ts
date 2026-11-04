@@ -721,9 +721,15 @@ async function requiredText(
 ): Promise<string> {
   const request = {
     ...options,
-    validate(value: string | undefined) {
+    async validate(value: string | undefined) {
       const input = value ?? "";
-      const customError = options.validate?.(input);
+      const validate = options.validate;
+      let customError: string | Error | undefined;
+      if (typeof validate === "function") {
+        customError = await validate(input);
+      } else if (validate) {
+        customError = (await validate["~standard"].validate(input)).issues?.[0]?.message;
+      }
       if (customError !== undefined) return customError;
       return input.trim().length === 0 ? "A value is required" : undefined;
     },

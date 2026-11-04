@@ -32,8 +32,8 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "@types/react": "^18.0.25",
-    "expo-modules-core": "^2.0.4"
+    "@types/react": "^19.2.18",
+    "expo-modules-core": "^57.0.24"
   },
   "peerDependencies": {
     "expo": "*",

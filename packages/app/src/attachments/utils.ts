@@ -167,6 +167,10 @@ export function fileUriToPath(uri: string): string {
   }
   const fileSource = uri.slice("file://".length);
   const decodedPath = decodeFilePathSource(fileSource);
+  const windowsDrivePath = normalizeWindowsDrivePath(decodedPath);
+  if (/^[A-Za-z]:\//.test(windowsDrivePath)) {
+    return windowsDrivePath;
+  }
   if (!fileSource.startsWith("/")) {
     return `\\\\${decodedPath.replace(/\//g, "\\")}`;
   }

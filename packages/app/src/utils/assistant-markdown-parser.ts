@@ -1,7 +1,7 @@
 import type MarkdownIt from "markdown-it";
 import { createMarkdownParser } from "@/utils/markdown-parser";
 
-export function createAssistantMarkdownParser(): MarkdownIt {
+export function createAssistantMarkdownParser(): InstanceType<typeof MarkdownIt> {
   const parser = createMarkdownParser({ linkify: true });
   const defaultValidateLink = parser.validateLink.bind(parser);
 

@@ -560,7 +560,7 @@ type CheckoutGithubSetAutoMergePayload = CheckoutGithubSetAutoMergeResponse["pay
 type CheckoutForgeGetCheckDetailsPayload = CheckoutForgeGetCheckDetailsResponse["payload"];
 type CheckoutGithubGetCheckDetailsPayload = CheckoutGithubGetCheckDetailsResponse["payload"];
 type CheckoutPrStatusPayload = CheckoutPrStatusResponse["payload"];
-type PullRequestTimelinePayload = PullRequestTimelineResponse["payload"];
+type PullRequestTimelinePayload = NonNullable<PullRequestTimelineResponse["payload"]>;
 type CheckoutSwitchBranchPayload = CheckoutSwitchBranchResponse["payload"];
 export type RenameBranchResult = z.infer<typeof CheckoutRenameBranchResponseSchema>["payload"];
 type StashSavePayload = StashSaveResponse["payload"];
@@ -1042,10 +1042,11 @@ type CorrelatedResponseMessage =
   | Extract<SessionOutboundMessage, { payload: { requestId: string } }>
   | Extract<SessionOutboundMessage, { type: "terminals_changed" }>
   | GetDaemonConfigResponse
-  | SetDaemonConfigResponse;
+  | SetDaemonConfigResponse
+  | Extract<SessionOutboundMessage, { type: "pull_request_timeline_response" }>;
 type CorrelatedResponseType = CorrelatedResponseMessage["type"];
 type CorrelatedResponsePayloads = {
-  [Message in CorrelatedResponseMessage as Message["type"]]: Message["payload"];
+  [Message in CorrelatedResponseMessage as Message["type"]]: NonNullable<Message["payload"]>;
 };
 type CorrelatedResponsePayload<TType extends CorrelatedResponseType> =
   CorrelatedResponsePayloads[TType];
@@ -5895,6 +5896,7 @@ export class DaemonClient {
       if (
         !active ||
         !("payload" in message) ||
+        !message.payload ||
         !("requestId" in message.payload) ||
         message.payload.requestId !== requestId
       )

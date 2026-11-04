@@ -1,8 +1,8 @@
 diff --git a/node_modules/@opencode-ai/sdk/dist/gen/core/serverSentEvents.gen.js b/node_modules/@opencode-ai/sdk/dist/gen/core/serverSentEvents.gen.js
-index 0000000..0000000 100644
+index 51b0e27..f624d2f 100644
 --- a/node_modules/@opencode-ai/sdk/dist/gen/core/serverSentEvents.gen.js
 +++ b/node_modules/@opencode-ai/sdk/dist/gen/core/serverSentEvents.gen.js
-@@ -26,7 +26,13 @@
+@@ -26,7 +26,13 @@ export const createSseClient = ({ onSseError, onSseEvent, responseTransformer, r
                  let buffer = "";
                  const abortHandler = () => {
                      try {
@@ -18,10 +18,10 @@ index 0000000..0000000 100644
                      catch {
                          // noop
 diff --git a/node_modules/@opencode-ai/sdk/dist/v2/gen/core/serverSentEvents.gen.js b/node_modules/@opencode-ai/sdk/dist/v2/gen/core/serverSentEvents.gen.js
-index 0000000..0000000 100644
+index 9684cb4..b7230df 100644
 --- a/node_modules/@opencode-ai/sdk/dist/v2/gen/core/serverSentEvents.gen.js
 +++ b/node_modules/@opencode-ai/sdk/dist/v2/gen/core/serverSentEvents.gen.js
-@@ -40,7 +40,13 @@
+@@ -40,7 +40,13 @@ export const createSseClient = ({ onRequest, onSseError, onSseEvent, responseTra
                  let buffer = "";
                  const abortHandler = () => {
                      try {

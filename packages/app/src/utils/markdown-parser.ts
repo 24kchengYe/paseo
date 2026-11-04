@@ -14,6 +14,10 @@ import MarkdownIt from "markdown-it";
  * disagree today: chat and the default renderer linkify bare URLs, plan cards
  * never have. Unifying that is a product decision on its own.
  */
-export function createMarkdownParser({ linkify }: { linkify: boolean }): MarkdownIt {
+export function createMarkdownParser({
+  linkify,
+}: {
+  linkify: boolean;
+}): InstanceType<typeof MarkdownIt> {
   return new MarkdownIt({ html: false, linkify });
 }

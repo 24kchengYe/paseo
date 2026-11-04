@@ -15,7 +15,7 @@ import {
 } from "./use-data";
 
 type CheckoutPrStatus = NonNullable<CheckoutPrStatusResponse["payload"]["status"]>;
-type PullRequestTimelinePayload = PullRequestTimelineResponse["payload"];
+type PullRequestTimelinePayload = NonNullable<PullRequestTimelineResponse["payload"]>;
 type PullRequestTimelineInput = Parameters<PrPaneTimelineClient["pullRequestTimeline"]>[0];
 
 const githubStatus: CheckoutPrStatus["github"] = {

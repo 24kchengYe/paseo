@@ -205,7 +205,7 @@ export class OwnedSubscriptions {
   }
 
   owns(message: SessionOutboundMessage): boolean {
-    const payload = "payload" in message ? message.payload : message;
+    const payload = "payload" in message && message.payload ? message.payload : message;
     return (
       "subscriptionId" in payload &&
       typeof payload.subscriptionId === "string" &&
@@ -214,7 +214,7 @@ export class OwnedSubscriptions {
   }
 
   receive(message: SessionOutboundMessage): void {
-    const payload = "payload" in message ? message.payload : message;
+    const payload = "payload" in message && message.payload ? message.payload : message;
     if ("subscriptionId" in payload && typeof payload.subscriptionId === "string")
       this.routes.get(payload.subscriptionId)?.receive(message);
   }

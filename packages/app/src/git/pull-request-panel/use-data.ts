@@ -15,7 +15,7 @@ import { prPaneTimelineQueryKey } from "./query-keys";
 
 type CheckoutPrStatus = CheckoutPrStatusResponse["payload"]["status"];
 type CheckoutPrStatusPayloadError = CheckoutPrStatusResponse["payload"]["error"];
-type PullRequestTimeline = PullRequestTimelineResponse["payload"];
+type PullRequestTimeline = NonNullable<PullRequestTimelineResponse["payload"]>;
 
 export interface UsePrPaneDataOptions {
   serverId: string;
